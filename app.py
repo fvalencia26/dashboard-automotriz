@@ -5,29 +5,7 @@ import plotly.express as px
 
 df = pd.read_excel("Ventas.xlsx")
 
-def convertir_fecha(x):
-
-    try:
-        return pd.to_datetime(
-            x,
-            dayfirst=True
-        )
-
-    except:
-
-        try:
-            return pd.to_datetime(
-                float(x),
-                unit="D",
-                origin="1899-12-30"
-            )
-
-        except:
-
-            return pd.NaT
-
-
-df["Fecha Venta"] = df["Fecha Venta"].apply(convertir_fecha)
+df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"])
 
 df["Año"] = df["Fecha Venta"].dt.year
 
@@ -659,6 +637,29 @@ with tab1:
         fig_vendedor,
         use_container_width=True
     )
+    cantidad_marca = (
+    df_vendedor.groupby("Marca")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values(by="Cantidad", ascending=False)
+    .head(10)
+)
+
+    fig_cantidad = px.bar(
+    cantidad_marca,
+    x="Marca",
+    y="Cantidad",
+    color="Cantidad",
+    text_auto=True
+)
+
+    st.subheader("🚘 Cantidad de Autos por Marca")
+
+    st.plotly_chart(
+    fig_cantidad,
+    use_container_width=True
+)
+   
 
     # =====================================================
     # TOP VENDEDORES + SUCURSALES
