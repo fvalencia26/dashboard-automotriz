@@ -659,7 +659,22 @@ with tab1:
     fig_cantidad,
     use_container_width=True
 )
-   
+    st.subheader("📋 Detalle de Ventas")
+
+    tabla_detalle = df_vendedor[[
+    "Vendedor",
+    "Marca",
+    "Modelo",
+    "Placa Patente",
+    "Año",
+    "Total Venta",
+    "Margen de Venta"
+]]
+
+    st.dataframe(
+    tabla_detalle.sort_values(by="Total Venta", ascending=False),
+    use_container_width=True
+)   
 
     # =====================================================
     # TOP VENDEDORES + SUCURSALES
@@ -795,12 +810,13 @@ with tab1:
             """,
             unsafe_allow_html=True
         )
-
+    
         st.plotly_chart(
             fig_sucursal,
             use_container_width=True
         )
-
+    
+    
 
 # =========================================================
 # TAB 2 - STOCK Y PRICING
