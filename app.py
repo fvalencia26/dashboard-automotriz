@@ -666,7 +666,7 @@ with tab1:
     "Marca",
     "Modelo",
     "Placa Patente",
-    "Año",
+    "Año Auto",
     "Total Venta",
     "Margen de Venta"
 ]]
