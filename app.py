@@ -155,6 +155,29 @@ df_stock = pd.read_excel(
     sheet_name="BBDD2"
 )
 
+
+
+# =========================================================
+# TOMAS Y RETOMAS
+# =========================================================
+
+archivo_tomas = "tomas.xlsx"
+
+df_tasaciones = pd.read_excel(
+    archivo_tomas,
+    sheet_name="Tasaciones"
+)
+
+df_peritajes = pd.read_excel(
+    archivo_tomas,
+    sheet_name="Peritajes"
+)
+
+df_tomas = pd.read_excel(
+    archivo_tomas,
+    sheet_name="Toma"
+)
+
 # =========================================================
 # LIMPIAR COLUMNAS
 # =========================================================
@@ -162,6 +185,9 @@ df_stock = pd.read_excel(
 df_ventas.columns = df_ventas.columns.str.strip()
 df_stock.columns = df_stock.columns.str.strip()
 
+df_tasaciones.columns = df_tasaciones.columns.str.strip()
+df_peritajes.columns = df_peritajes.columns.str.strip()
+df_tomas.columns = df_tomas.columns.str.strip()
 # =========================================================
 # FORMATO COLUMNAS
 # =========================================================
@@ -335,12 +361,64 @@ if sucursal:
     ]
 
 # =========================================================
+# FILTROS TOMAS
+# =========================================================
+
+df_tomas["Fecha carta de toma"] = pd.to_datetime(
+    df_tomas["Fecha carta de toma"],
+    errors="coerce"
+)
+
+df_tomas["Año Filtro"] = df_tomas["Fecha carta de toma"].dt.year
+df_tomas["Mes Filtro"] = df_tomas["Fecha carta de toma"].dt.month
+
+df_toma_filtrado = df_tomas[
+    (df_tomas["Año Filtro"].isin(años_sel))
+    &
+    (df_tomas["Mes Filtro"].isin(meses_sel))
+]
+
+df_tasaciones["Última Actualización"] = pd.to_datetime(
+    df_tasaciones["Última Actualización"],
+    errors="coerce"
+)
+
+df_tasaciones["Año Filtro"] = df_tasaciones["Última Actualización"].dt.year
+df_tasaciones["Mes Filtro"] = df_tasaciones["Última Actualización"].dt.month
+
+
+df_peritajes["Fecha de firma"] = pd.to_datetime(
+    df_peritajes["Fecha de firma"],
+    errors="coerce"
+)
+
+df_peritajes["Año Filtro"] = df_peritajes["Fecha de firma"].dt.year
+df_peritajes["Mes Filtro"] = df_peritajes["Fecha de firma"].dt.month
+
+
+# =========================================================
+# DATAFRAMES FILTRADOS
+# =========================================================
+
+df_tas_filtrado = df_tasaciones[
+    (df_tasaciones["Año Filtro"].isin(años_sel))
+    &
+    (df_tasaciones["Mes Filtro"].isin(meses_sel))
+]
+
+df_per_filtrado = df_peritajes[
+    (df_peritajes["Año Filtro"].isin(años_sel))
+    &
+    (df_peritajes["Mes Filtro"].isin(meses_sel))
+]
+# =========================================================
 # TABS
 # =========================================================
 
-tab1, tab2 = st.tabs([
+tab1, tab2, tab3 = st.tabs([
     "📈 Ventas",
-    "🚗 Stock y Pricing"
+    "🚗 Stock y Pricing",
+    "🔄 Tomas y Retomas"
 ])
 
 # =========================================================
@@ -1078,3 +1156,288 @@ with tab2:
         tabla_final,
         use_container_width=True
     )
+
+# =========================================================
+# TAB 3 - TOMAS Y RETOMAS
+# =========================================================
+
+with tab3:
+
+    st.markdown("""
+    <div style="
+    background: linear-gradient(90deg,#0f172a,#1e293b);
+    padding:30px;
+    border-radius:24px;
+    margin-bottom:25px;
+    border:1px solid #334155;
+    ">
+    <h1 style="
+    color:white;
+    margin:0;
+    font-size:20px;
+    font-weight:200;
+    ">
+    🔄 Tasaciones, Peritajes y Tomas
+    </h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # KPIs
+
+    total_tasaciones = len(df_tas_filtrado)
+    total_peritajes = len(df_per_filtrado)
+    total_tomas = len(df_toma_filtrado)
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        "📋 Tasaciones",
+        f"{total_tasaciones:,.0f}".replace(",", ".")
+    )
+
+    col2.metric(
+        "🔎 Peritajes",
+        f"{total_peritajes:,.0f}".replace(",", ".")
+    )
+
+    col3.metric(
+        "🚘 Tomas",
+        f"{total_tomas:,.0f}".replace(",", ".")
+    )
+
+    st.markdown("---")
+
+
+valor_tomas = pd.to_numeric(
+    df_toma_filtrado["Precio"],
+    errors="coerce"
+).sum()
+
+st.metric(
+    "💰 Valor Total Tomado",
+    f"${valor_tomas:,.0f}".replace(",", ".")
+)
+
+import plotly.graph_objects as go
+
+funnel = go.Figure(go.Funnel(
+    y=[
+        "Tasaciones",
+        "Peritajes",
+        "Tomas"
+    ],
+    x=[
+        total_tasaciones,
+        total_peritajes,
+        total_tomas
+    ]
+))
+
+funnel.update_layout(
+    height=500,
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(color="white")
+)
+
+st.plotly_chart(
+    funnel,
+    use_container_width=True
+)
+
+st.markdown("---")
+st.subheader("🏢 Tasaciones por Sucursal")
+
+tas_sucursal = (
+    df_tas_filtrado.groupby("Sucursal")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values("Cantidad", ascending=False)
+)
+
+fig_sucursal = px.bar(
+    tas_sucursal,
+    x="Sucursal",
+    y="Cantidad",
+    color="Cantidad",
+    text_auto=True
+)
+
+fig_sucursal.update_layout(
+    height=500,
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(17,24,39,0.85)",
+    font=dict(color="white")
+)
+
+st.plotly_chart(
+    fig_sucursal,
+    use_container_width=True
+)
+
+st.subheader("👨‍💼 Tasaciones por Vendedor")
+
+tas_vendedor = (
+    df_tas_filtrado.groupby("Vendedor")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values("Cantidad", ascending=False)
+    .head(15)
+)
+
+fig_vendedor = px.bar(
+    tas_vendedor,
+    x="Cantidad",
+    y="Vendedor",
+    orientation="h",
+    color="Cantidad",
+    text_auto=True
+)
+
+fig_vendedor.update_layout(
+    height=600,
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(17,24,39,0.85)",
+    font=dict(color="white")
+)
+
+st.plotly_chart(
+    fig_vendedor,
+    use_container_width=True
+)
+
+st.subheader("🚗 Marcas Más Tasadas")
+
+tas_marca = (
+    df_tas_filtrado.groupby("Marca")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values("Cantidad", ascending=False)
+    .head(10)
+)
+
+fig_marca = px.pie(
+    tas_marca,
+    values="Cantidad",
+    names="Marca"
+)
+
+st.plotly_chart(
+    fig_marca,
+    use_container_width=True
+)
+
+st.markdown("---")
+st.subheader("🔎 Peritajes por Sucursal")
+
+per_sucursal = (
+    df_per_filtrado.groupby("Sucursal")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values("Cantidad", ascending=False)
+)
+
+fig_per_sucursal = px.bar(
+    per_sucursal,
+    x="Sucursal",
+    y="Cantidad",
+    color="Cantidad",
+    text_auto=True
+)
+
+st.plotly_chart(
+    fig_per_sucursal,
+    use_container_width=True
+)
+
+st.subheader("👨‍💼 Peritajes por Vendedor")
+
+per_vendedor = (
+    df_per_filtrado.groupby("Vendedor")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values("Cantidad", ascending=False)
+    .head(15)
+)
+
+fig_per_vendedor = px.bar(
+    per_vendedor,
+    x="Cantidad",
+    y="Vendedor",
+    orientation="h",
+    color="Cantidad",
+    text_auto=True
+)
+
+st.plotly_chart(
+    fig_per_vendedor,
+    use_container_width=True
+)
+
+
+st.markdown("---")
+st.subheader("🚘 Tomas por Sucursal")
+
+toma_sucursal = (
+    df_toma_filtrado.groupby("Sucursal")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values("Cantidad", ascending=False)
+)
+
+fig_toma_sucursal = px.bar(
+    toma_sucursal,
+    x="Sucursal",
+    y="Cantidad",
+    color="Cantidad",
+    text_auto=True
+)
+
+st.plotly_chart(
+    fig_toma_sucursal,
+    use_container_width=True
+)
+
+st.subheader("🚗 Marcas Más Tomadas")
+
+toma_marca = (
+    df_toma_filtrado.groupby("Marca")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values("Cantidad", ascending=False)
+    .head(10)
+)
+
+fig_toma_marca = px.pie(
+    toma_marca,
+    values="Cantidad",
+    names="Marca"
+)
+
+st.plotly_chart(
+    fig_toma_marca,
+    use_container_width=True
+)
+
+
+conversion_peritaje = (
+    total_peritajes / total_tasaciones * 100
+    if total_tasaciones > 0 else 0
+)
+
+conversion_toma = (
+    total_tomas / total_peritajes * 100
+    if total_peritajes > 0 else 0
+)
+
+col1, col2 = st.columns(2)
+
+col1.metric(
+    "📋 ➜ 🔎 Conversión Tasación a Peritaje",
+    f"{conversion_peritaje:.1f}%"
+)
+
+col2.metric(
+    "🔎 ➜ 🚘 Conversión Peritaje a Toma",
+    f"{conversion_toma:.1f}%"
+)
