@@ -1182,13 +1182,20 @@ with tab3:
     </div>
     """, unsafe_allow_html=True)
 
-    # KPIs
+    # =====================================================
+# KPIs
+# =====================================================
 
     total_tasaciones = len(df_tas_filtrado)
     total_peritajes = len(df_per_filtrado)
     total_tomas = len(df_toma_filtrado)
 
-    col1, col2, col3 = st.columns(3)
+    valor_tomas = pd.to_numeric(
+    df_toma_filtrado["Precio"],
+    errors="coerce"
+    ).sum()
+
+    col1, col2, col3, col4 = st.columns(4)
 
     col1.metric(
         "📋 Tasaciones",
@@ -1205,239 +1212,269 @@ with tab3:
         f"{total_tomas:,.0f}".replace(",", ".")
     )
 
+    col4.metric(
+        "💰 Valor Tomado",
+        f"${valor_tomas:,.0f}".replace(",", ".")
+    )
+
+# =====================================================
+# FUNNEL
+# =====================================================
+
     st.markdown("---")
+    st.subheader("🔄 Funnel Comercial")
 
+    import plotly.graph_objects as go
 
-valor_tomas = pd.to_numeric(
-    df_toma_filtrado["Precio"],
-    errors="coerce"
-).sum()
+    funnel = go.Figure(go.Funnel(
+        y=[
+            "Tasaciones",
+            "Peritajes",
+            "Tomas"
+        ],
+        x=[
+            total_tasaciones,
+            total_peritajes,
+            total_tomas
+        ]
+    ))
 
-st.metric(
-    "💰 Valor Total Tomado",
-    f"${valor_tomas:,.0f}".replace(",", ".")
-)
+    funnel.update_layout(
+        height=500,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white")
+    )
 
-import plotly.graph_objects as go
+    st.plotly_chart(
+        funnel,
+        use_container_width=True
+    )
 
-funnel = go.Figure(go.Funnel(
-    y=[
-        "Tasaciones",
-        "Peritajes",
-        "Tomas"
-    ],
-    x=[
-        total_tasaciones,
-        total_peritajes,
-        total_tomas
-    ]
-))
+# =====================================================
+# CONVERSIONES
+# =====================================================
 
-funnel.update_layout(
-    height=500,
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(color="white")
-)
+    st.markdown("---")
+    st.subheader("🎯 Conversión por Etapa")
 
-st.plotly_chart(
-    funnel,
-    use_container_width=True
-)
+    conversion_peritaje = (
+        total_peritajes / total_tasaciones * 100
+        if total_tasaciones > 0 else 0  
+    )
 
-st.markdown("---")
-st.subheader("🏢 Tasaciones por Sucursal")
+    conversion_toma = (
+        total_tomas / total_peritajes * 100
+        if total_peritajes > 0 else 0
+    )
 
-tas_sucursal = (
-    df_tas_filtrado.groupby("Sucursal")
-    .size()
-    .reset_index(name="Cantidad")
-    .sort_values("Cantidad", ascending=False)
-)
+    conversion_total = (
+        total_tomas / total_tasaciones * 100
+        if total_tasaciones > 0 else 0
+    )
 
-fig_sucursal = px.bar(
-    tas_sucursal,
-    x="Sucursal",
-    y="Cantidad",
-    color="Cantidad",
-    text_auto=True
-)
+    col1, col2, col3 = st.columns(3)
 
-fig_sucursal.update_layout(
-    height=500,
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(17,24,39,0.85)",
-    font=dict(color="white")
-)
+    col1.metric(
+        "Tasación ➜ Peritaje",
+        f"{conversion_peritaje:.1f}%"
+    )
 
-st.plotly_chart(
-    fig_sucursal,
-    use_container_width=True
-)
+    col2.metric(
+        "Peritaje ➜ Toma",
+        f"{conversion_toma:.1f}%"
+    )
 
-st.subheader("👨‍💼 Tasaciones por Vendedor")
+    col3.metric(
+        "Tasación ➜ Toma",
+        f"{conversion_total:.1f}%"
+    )
 
-tas_vendedor = (
-    df_tas_filtrado.groupby("Vendedor")
-    .size()
-    .reset_index(name="Cantidad")
-    .sort_values("Cantidad", ascending=False)
-    .head(15)
-)
+    # =====================================================
+    # GESTIÓN POR SUCURSAL
+    # =====================================================
 
-fig_vendedor = px.bar(
-    tas_vendedor,
-    x="Cantidad",
-    y="Vendedor",
-    orientation="h",
-    color="Cantidad",
-    text_auto=True
-)
+    st.markdown("---")
+    st.subheader("🏢 Gestión por Sucursal")
 
-fig_vendedor.update_layout(
-    height=600,
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(17,24,39,0.85)",
-    font=dict(color="white")
-)
+    tipo_sucursal = st.selectbox(
+        "Indicador",
+        [
+            "Tasaciones",
+            "Peritajes",
+            "Tomas"
+        ],
+        key="sucursal_tab3"
+    )
 
-st.plotly_chart(
-    fig_vendedor,
-    use_container_width=True
-)
+    if tipo_sucursal == "Tasaciones":
 
-st.subheader("🚗 Marcas Más Tasadas")
+        datos_sucursal = (
+            df_tas_filtrado.groupby("Sucursal")
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Cantidad", ascending=False)
+        )
 
-tas_marca = (
-    df_tas_filtrado.groupby("Marca")
-    .size()
-    .reset_index(name="Cantidad")
-    .sort_values("Cantidad", ascending=False)
-    .head(10)
-)
+    elif tipo_sucursal == "Peritajes":
 
-fig_marca = px.pie(
-    tas_marca,
-    values="Cantidad",
-    names="Marca"
-)
+        datos_sucursal = (
+            df_per_filtrado.groupby("Sucursal")
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Cantidad", ascending=False)
+        )
 
-st.plotly_chart(
-    fig_marca,
-    use_container_width=True
-)
+    else:
 
-st.markdown("---")
-st.subheader("🔎 Peritajes por Sucursal")
+        datos_sucursal = (
+            df_toma_filtrado.groupby("Sucursal")
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Cantidad", ascending=False)
+        )
 
-per_sucursal = (
-    df_per_filtrado.groupby("Sucursal")
-    .size()
-    .reset_index(name="Cantidad")
-    .sort_values("Cantidad", ascending=False)
-)
+    fig_sucursal = px.bar(
+        datos_sucursal,
+        x="Sucursal",
+        y="Cantidad",
+        color="Cantidad",
+        text_auto=True
+    )
 
-fig_per_sucursal = px.bar(
-    per_sucursal,
-    x="Sucursal",
-    y="Cantidad",
-    color="Cantidad",
-    text_auto=True
-)
+    fig_sucursal.update_layout(
+        height=550,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(17,24,39,0.85)",
+        font=dict(color="white")
+    )
 
-st.plotly_chart(
-    fig_per_sucursal,
-    use_container_width=True
-)
+    st.plotly_chart(
+        fig_sucursal,
+        use_container_width=True
+    )
 
-st.subheader("👨‍💼 Peritajes por Vendedor")
+    # =====================================================
+    # TOP VENDEDORES
+    # =====================================================
 
-per_vendedor = (
-    df_per_filtrado.groupby("Vendedor")
-    .size()
-    .reset_index(name="Cantidad")
-    .sort_values("Cantidad", ascending=False)
-    .head(15)
-)
+    st.markdown("---")
+    st.subheader("👨‍💼 Top Vendedores")
 
-fig_per_vendedor = px.bar(
-    per_vendedor,
-    x="Cantidad",
-    y="Vendedor",
-    orientation="h",
-    color="Cantidad",
-    text_auto=True
-)
+    tipo_vendedor = st.selectbox(
+        "Indicador vendedor",
+        [
+            "Tasaciones",
+            "Peritajes",
+            "Tomas"
+        ],
+        key="vendedores_tab3"
+    )
 
-st.plotly_chart(
-    fig_per_vendedor,
-    use_container_width=True
-)
+    if tipo_vendedor == "Tasaciones":
 
+        datos_vendedor = (
+            df_tas_filtrado.groupby("Vendedor")
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Cantidad", ascending=False)
+            .head(15)
+        )
 
-st.markdown("---")
-st.subheader("🚘 Tomas por Sucursal")
+    elif tipo_vendedor == "Peritajes":
 
-toma_sucursal = (
-    df_toma_filtrado.groupby("Sucursal")
-    .size()
-    .reset_index(name="Cantidad")
-    .sort_values("Cantidad", ascending=False)
-)
+        datos_vendedor = (
+            df_per_filtrado.groupby("Vendedor")
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Cantidad", ascending=False)
+            .head(15)
+        )
 
-fig_toma_sucursal = px.bar(
-    toma_sucursal,
-    x="Sucursal",
-    y="Cantidad",
-    color="Cantidad",
-    text_auto=True
-)
+    else:
 
-st.plotly_chart(
-    fig_toma_sucursal,
-    use_container_width=True
-)
+        datos_vendedor = (
+            df_toma_filtrado.groupby("Vendedor")
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Cantidad", ascending=False)
+            .head(15)
+        )
 
-st.subheader("🚗 Marcas Más Tomadas")
+    fig_vendedor = px.bar(
+        datos_vendedor,
+        x="Cantidad",
+        y="Vendedor",
+        orientation="h",
+        color="Cantidad",
+        text_auto=True
+    )
 
-toma_marca = (
-    df_toma_filtrado.groupby("Marca")
-    .size()
-    .reset_index(name="Cantidad")
-    .sort_values("Cantidad", ascending=False)
-    .head(10)
-)
+    fig_vendedor.update_layout(
+        height=600,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(17,24,39,0.85)",
+        font=dict(color="white")
+    )
 
-fig_toma_marca = px.pie(
-    toma_marca,
-    values="Cantidad",
-    names="Marca"
-)
+    st.plotly_chart(
+        fig_vendedor,
+        use_container_width=True
+    )
 
-st.plotly_chart(
-    fig_toma_marca,
-    use_container_width=True
-)
+    # =====================================================
+    # TOP MARCAS
+    # =====================================================
 
+    st.markdown("---")
+    st.subheader("🚗 Top Marcas")
 
-conversion_peritaje = (
-    total_peritajes / total_tasaciones * 100
-    if total_tasaciones > 0 else 0
-)
+    tipo_marca = st.selectbox(
+        "Indicador marca",
+        [
+            "Tasaciones",
+            "Tomas"
+        ],
+        key="marcas_tab3"
+    )
 
-conversion_toma = (
-    total_tomas / total_peritajes * 100
-    if total_peritajes > 0 else 0
-)
+    if tipo_marca == "Tasaciones":
 
-col1, col2 = st.columns(2)
+        datos_marca = (
+            df_tas_filtrado.groupby("Marca")
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Cantidad", ascending=False)
+            .head(10)
+        )
 
-col1.metric(
-    "📋 ➜ 🔎 Conversión Tasación a Peritaje",
-    f"{conversion_peritaje:.1f}%"
-)
+    else:
 
-col2.metric(
-    "🔎 ➜ 🚘 Conversión Peritaje a Toma",
-    f"{conversion_toma:.1f}%"
-)
+        datos_marca = (
+            df_toma_filtrado.groupby("Marca")
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Cantidad", ascending=False)
+            .head(10)
+        )
+
+    fig_marca = px.bar(
+        datos_marca,
+        x="Cantidad",
+        y="Marca",
+        orientation="h",
+        color="Cantidad",
+        text_auto=True
+    )
+
+    fig_marca.update_layout(
+        height=500,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(17,24,39,0.85)",
+        font=dict(color="white")
+    )
+
+    st.plotly_chart(
+        fig_marca,
+        use_container_width=True
+    )
