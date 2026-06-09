@@ -141,42 +141,43 @@ with col_titulo:
 
 st.markdown("---")
 
-# =========================================================
-# LEER ARCHIVOS
-# =========================================================
+@st.cache_data
+def cargar_datos():
 
-df_ventas = pd.read_excel(
-    "Ventas.xlsx",
-    sheet_name="Hoja1"
-)
+        df_ventas = pd.read_excel(
+        "Ventas.xlsx",
+        sheet_name="Hoja1"
+    )
 
-df_stock = pd.read_excel(
-    "stock.xlsx.xlsx",
-    sheet_name="BBDD2"
-)
+        df_stock = pd.read_excel(
+        "stock.xlsx.xlsx",
+        sheet_name="BBDD2"
+    )
 
+        df_tasaciones = pd.read_excel(
+        "tomas.xlsx",
+        sheet_name="Tasaciones"
+    )
 
+        df_peritajes = pd.read_excel(
+        "tomas.xlsx",
+        sheet_name="Peritajes"
+    )
 
-# =========================================================
-# TOMAS Y RETOMAS
-# =========================================================
+        df_tomas = pd.read_excel(
+        "tomas.xlsx",
+        sheet_name="Toma"
+    )
 
-archivo_tomas = "tomas.xlsx"
+        return (
+        df_ventas,
+        df_stock,
+        df_tasaciones,
+        df_peritajes,
+        df_tomas
+    )
 
-df_tasaciones = pd.read_excel(
-    archivo_tomas,
-    sheet_name="Tasaciones"
-)
-
-df_peritajes = pd.read_excel(
-    archivo_tomas,
-    sheet_name="Peritajes"
-)
-
-df_tomas = pd.read_excel(
-    archivo_tomas,
-    sheet_name="Toma"
-)
+df_ventas, df_stock, df_tasaciones, df_peritajes, df_tomas = cargar_datos()
 
 # =========================================================
 # LIMPIAR COLUMNAS
