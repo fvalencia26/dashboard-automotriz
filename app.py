@@ -903,8 +903,8 @@ with tab1:
 with tab2:
 
     # ==========================================
-# KPIs STOCK
-# ==========================================
+    # KPIs STOCK
+    # ==========================================
 
     stock_total = len(df_stock)
 
@@ -914,7 +914,7 @@ with tab2:
         .astype(str)
         .str.upper()
         .str.contains("DISPONIBLE", na=False)
-    ]
+        ]
     )
 
     stock_taller = len(
@@ -923,16 +923,13 @@ with tab2:
         .astype(str)
         .str.upper()
         .str.contains("TALLER", na=False)
-    ]
+        ]
     )
 
-    stock_no_disponible = len(
-        df_stock[
-        df_stock["Estado Dealer"]
-        .astype(str)
-        .str.upper()
-        .str.contains("NO DISPONIBLE", na=False)
-        ]
+    stock_otros = (
+    stock_total
+    - stock_disponible
+    - stock_taller
     )
 
     st.subheader("🚗 Estado del Stock")
@@ -940,23 +937,23 @@ with tab2:
     col1, col2, col3, col4 = st.columns(4)
 
     col1.metric(
-    "🚗 Stock Total",
-    f"{stock_total:,.0f}".replace(",", ".")
+        "🚗 Total",
+        f"{stock_total:,.0f}".replace(",", ".")
     )
 
     col2.metric(
-    "🟢 Disponible",
-    f"{stock_disponible:,.0f}".replace(",", ".")
+        "🟢 Disponible",
+        f"{stock_disponible:,.0f}".replace(",", ".")
     )
 
     col3.metric(
-    "🟠 En Taller",
-    f"{stock_taller:,.0f}".replace(",", ".")
+        "🟠 En Taller",
+        f"{stock_taller:,.0f}".replace(",", ".")
     )
 
     col4.metric(
-    "🔴 No Disponible",
-    f"{stock_no_disponible:,.0f}".replace(",", ".")
+        "⚪ Otros",
+        f"{stock_otros:,.0f}".replace(",", ".")
     )
 
     st.markdown("---")
