@@ -902,6 +902,65 @@ with tab1:
 
 with tab2:
 
+    # ==========================================
+# KPIs STOCK
+# ==========================================
+
+    stock_total = len(df_stock)
+
+    stock_disponible = len(
+    df_stock[
+        df_stock["Estado Dealer"]
+        .astype(str)
+        .str.upper()
+        .str.contains("DISPONIBLE", na=False)
+    ]
+    )
+
+    stock_taller = len(
+    df_stock[
+        df_stock["Estado Dealer"]
+        .astype(str)
+        .str.upper()
+        .str.contains("TALLER", na=False)
+    ]
+    )
+
+    stock_no_disponible = len(
+        df_stock[
+        df_stock["Estado Dealer"]
+        .astype(str)
+        .str.upper()
+        .str.contains("NO DISPONIBLE", na=False)
+        ]
+    )
+
+    st.subheader("🚗 Estado del Stock")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric(
+    "🚗 Stock Total",
+    f"{stock_total:,.0f}".replace(",", ".")
+    )
+
+    col2.metric(
+    "🟢 Disponible",
+    f"{stock_disponible:,.0f}".replace(",", ".")
+    )
+
+    col3.metric(
+    "🟠 En Taller",
+    f"{stock_taller:,.0f}".replace(",", ".")
+    )
+
+    col4.metric(
+    "🔴 No Disponible",
+    f"{stock_no_disponible:,.0f}".replace(",", ".")
+    )
+
+    st.markdown("---")
+
     st.subheader("💡 Pricing Automático")
 
     col1, col2, col3, col4 = st.columns(4)
