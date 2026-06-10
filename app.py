@@ -908,29 +908,36 @@ with tab2:
     # ==========================================
 
     stock_total = len(df_stock)
+    
+
+    # ==========================================
+# KPIs STOCK
+# ==========================================
+
+    stock_total = len(df_stock)
 
     stock_disponible = len(
-    df_stock[
-        df_stock["Estado Dealer"]
-        .astype(str)
-        .str.upper()
-        .str.contains("DISPONIBLE", na=False)
+        df_stock[
+            df_stock["Estado Dealer"]
+            .astype(str)
+            .str.upper()
+            .str.contains("DISPONIBLE", na=False)
         ]
     )
 
     stock_taller = len(
-    df_stock[
-        df_stock["Estado Dealer"]
-        .astype(str)
-        .str.upper()
-        .str.contains("TALLER", na=False)
+        df_stock[
+            df_stock["Estado Dealer"]
+            .astype(str)
+            .str.upper()
+            .str.contains("TALLER", na=False)
         ]
     )
 
     stock_otros = (
-    stock_total
-    - stock_disponible
-    - stock_taller
+        stock_total
+        - stock_disponible
+        - stock_taller
     )
 
     st.subheader("🚗 Estado del Stock")
@@ -957,9 +964,7 @@ with tab2:
         f"{stock_otros:,.0f}".replace(",", ".")
     )
 
-    st.markdown("---")
-
-    st.subheader("💡 Pricing Automático ( Autos en Stock )")
+    st.subheader("💡 Pricing Automático ( Autos Disponibles )")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -967,7 +972,11 @@ with tab2:
 
         marca_pricing = st.selectbox(
             "Marca",
-            sorted(df_stock["Marca"].dropna().unique())
+            sorted(
+                df_stock["Marca"]
+                .dropna()
+                .unique()
+            )
         )
 
     with col2:
@@ -1118,8 +1127,6 @@ with tab2:
             "🔥 Venta Sugerida",
             f"${venta_sugerida:,.0f}".replace(",", ".")
         )
-
-    st.markdown("---")
 
             # =====================================================
     # ESTIMADOR DE VEHÍCULOS
