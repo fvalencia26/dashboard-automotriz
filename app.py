@@ -150,7 +150,7 @@ def cargar_datos():
     )
 
         df_stock = pd.read_excel(
-        "stock.xlsx.xlsx",
+        "stock.xlsx",
         sheet_name="BBDD2"
     )
 
@@ -959,7 +959,7 @@ with tab2:
 
     st.markdown("---")
 
-    st.subheader("💡 Pricing Automático")
+    st.subheader("💡 Pricing Automático ( Autos en Stock )")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -1066,7 +1066,7 @@ with tab2:
         lista = fila["Precio Lista informe stock"]
         mercado = fila["Precio Mercado"]
         toma = fila["Precio toma historico autored"]
-        dias = fila["Suma de Días Stock"]
+        dias = fila["Días Stock"]
 
         if dias <= 30:
 
@@ -1121,6 +1121,167 @@ with tab2:
 
     st.markdown("---")
 
+            # =====================================================
+    # ESTIMADOR DE VEHÍCULOS
+    # =====================================================
+
+
+    with st.expander(
+        "💰 Simulador de Tasación",
+        expanded=False
+        ):
+    
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+
+            marca_est = st.selectbox(
+                "Marca",
+                sorted(df_stock["Marca"].dropna().unique()),
+                key="marca_est"
+            )
+
+        with col2:
+
+            modelo_est = st.selectbox(
+                "Modelo",
+                sorted(
+                    df_stock[
+                        df_stock["Marca"] == marca_est
+                    ]["Modelo"]
+                    .dropna()
+                    .astype(str)
+                    .unique()
+                ),
+                key="modelo_est"
+            )
+
+        with col3:
+
+            año_est = st.number_input(
+                "Año",
+                min_value=2000,
+                max_value=2035,
+                value=2023
+            )
+
+        with col4:
+
+            version_est = st.selectbox(
+                "Versión",
+                sorted(
+                    df_stock[
+                        (df_stock["Marca"] == marca_est)
+                        &
+                        (df_stock["Modelo"] == modelo_est)
+                    ]["Versión"]
+                    .dropna()
+                    .astype(str)
+                    .unique()
+                ),
+                key="version_est"
+            )
+
+        km_est = st.number_input(
+            "Kilometraje",
+            min_value=0,
+            value=30000,
+            step=1000
+        )
+
+        # ==========================================
+        # COMPARABLES
+        # ==========================================
+
+        comparables = df_stock[
+            (df_stock["Marca"] == marca_est)
+            &
+            (df_stock["Modelo"] == modelo_est)
+            &
+            (
+                df_stock["Versión"]
+                .astype(str)
+                ==
+                str(version_est)
+            )
+        ]
+
+        if len(comparables) < 3:
+
+            comparables = df_stock[
+                (df_stock["Marca"] == marca_est)
+                &
+                (df_stock["Modelo"] == modelo_est)
+            ]
+
+        if len(comparables) > 0:
+
+            mercado_prom = pd.to_numeric(
+                comparables["Precio Mercado"],
+                errors="coerce"
+            ).mean()
+
+            toma_prom = pd.to_numeric(
+                comparables["Precio toma historico autored"],
+                errors="coerce"
+            ).mean()
+
+            km_prom = pd.to_numeric(
+                comparables["Kilometraje"],
+                errors="coerce"
+            ).mean()
+
+            ajuste_km = (
+                km_est - km_prom
+            ) * 15
+
+            ajuste_año = (
+                año_est - comparables["Año"].mean()
+            ) * 300000
+
+            mercado_estimado = (
+                mercado_prom
+                - ajuste_km
+                + ajuste_año
+            )
+
+            toma_estimada = (
+                toma_prom
+                - ajuste_km
+                + ajuste_año
+            )
+
+            venta_sugerida = (
+                mercado_estimado * 1.02
+            )
+
+            col1, col2, col3 = st.columns(3)
+
+            col1.metric(
+                "🌎 Mercado Estimado",
+                f"${mercado_estimado:,.0f}".replace(",", ".")
+            )
+
+            col2.metric(
+                "📉 Toma Estimada",
+                f"${toma_estimada:,.0f}".replace(",", ".")
+            )
+
+            col3.metric(
+                "🔥 Venta Sugerida",
+                f"${venta_sugerida:,.0f}".replace(",", ".")
+            )
+
+            st.info(
+                f"Comparables utilizados: {len(comparables)}"
+            )
+
+        else:
+
+            st.warning(
+                "No existen comparables suficientes."
+            )
+
     # =====================================================
     # ALERTAS STOCK
     # =====================================================
@@ -1142,12 +1303,12 @@ with tab2:
             return "🟢 Saludable"
 
     df_stock["Alerta"] = (
-        df_stock["Suma de Días Stock"]
+        df_stock["Días Stock"]
         .apply(alerta_stock)
     )
 
     riesgo_stock = df_stock[
-        df_stock["Suma de Días Stock"].notna()
+        df_stock["Días Stock"].notna()
     ]
 
     buscar_patente = st.text_input(
@@ -1166,31 +1327,17 @@ with tab2:
             )
         ]
 
-    patentes_excluir = st.multiselect(
-
-        "🚫 Excluir Patentes",
-
-        sorted(
-            riesgo_stock["Placa Patente"]
-            .dropna()
-            .astype(str)
-            .unique()
-        )
-    )
-
-    if patentes_excluir:
-
-        riesgo_stock = riesgo_stock[
-            ~riesgo_stock["Placa Patente"]
-            .astype(str)
-            .isin(patentes_excluir)
-        ]
-
-    riesgo_stock["Suma de Días Stock"] = (
-        riesgo_stock["Suma de Días Stock"]
+    riesgo_stock["Días Stock"] = (
+        riesgo_stock["Días Stock"]
         .fillna(0)
         .astype(int)
     )
+
+    riesgo_stock = riesgo_stock[
+        riesgo_stock["Precio toma historico autored"]
+        .fillna(0)
+        .gt(0)
+]
 
     tabla_final = riesgo_stock[
         [
@@ -1198,14 +1345,14 @@ with tab2:
             "Modelo",
             "Versión",
             "Placa Patente",
-            "Suma de Días Stock",
+            "Días Stock",
             "Precio Lista informe stock",
             "Precio Mercado",
             "Precio toma historico autored",
             "Alerta"
         ]
     ].sort_values(
-        by="Suma de Días Stock",
+        by="Días Stock",
         ascending=False
     )
 
