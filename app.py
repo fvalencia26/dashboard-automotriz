@@ -179,6 +179,7 @@ def cargar_datos():
 
 df_ventas, df_stock, df_tasaciones, df_peritajes, df_tomas = cargar_datos()
 
+st.error(f"STOCK CARGADO: {len(df_stock)} registros")
 # =========================================================
 # LIMPIAR COLUMNAS
 # =========================================================
