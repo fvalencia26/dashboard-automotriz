@@ -168,16 +168,22 @@ def cargar_datos():
         "tomas.xlsx",
         sheet_name="Toma"
     )
+        
+        df_historico = pd.read_excel(
+        "historico tasaciones.xlsx",
+        sheet_name="BBDD"
+    )
 
         return (
         df_ventas,
         df_stock,
         df_tasaciones,
         df_peritajes,
-        df_tomas
+        df_tomas,
+        df_historico
     )
 
-df_ventas, df_stock, df_tasaciones, df_peritajes, df_tomas = cargar_datos()
+df_ventas, df_stock, df_tasaciones, df_peritajes, df_tomas, df_historico = cargar_datos()
 
 # =========================================================
 # LIMPIAR COLUMNAS
@@ -1144,7 +1150,7 @@ with tab2:
 
             marca_est = st.selectbox(
                 "Marca",
-                sorted(df_stock["Marca"].dropna().unique()),
+                sorted(df_historico["Marca"].dropna().unique()),
                 key="marca_est"
             )
 
@@ -1153,8 +1159,8 @@ with tab2:
             modelo_est = st.selectbox(
                 "Modelo",
                 sorted(
-                    df_stock[
-                        df_stock["Marca"] == marca_est
+                    df_historico[
+                        df_historico["Marca"] == marca_est
                     ]["Modelo"]
                     .dropna()
                     .astype(str)
@@ -1177,10 +1183,10 @@ with tab2:
             version_est = st.selectbox(
                 "Versión",
                 sorted(
-                    df_stock[
-                        (df_stock["Marca"] == marca_est)
+                    df_historico[
+                        (df_historico["Marca"] == marca_est)
                         &
-                        (df_stock["Modelo"] == modelo_est)
+                        (df_historico["Modelo"] == modelo_est)
                     ]["Versión"]
                     .dropna()
                     .astype(str)
@@ -1196,55 +1202,56 @@ with tab2:
             step=1000
         )
 
-        # ==========================================
+                # ==========================================
         # COMPARABLES
         # ==========================================
 
-        comparables = df_stock[
-            (df_stock["Marca"] == marca_est)
-            &
-            (df_stock["Modelo"] == modelo_est)
-            &
-            (
-                df_stock["Versión"]
-                .astype(str)
-                ==
-                str(version_est)
-            )
+        comparables = df_historico[
+        (df_historico["Marca"] == marca_est)
+        &
+        (df_historico["Modelo"] == modelo_est)
         ]
 
-        if len(comparables) < 3:
+        # Si hay suficientes registros de la misma versión
+        comparables_version = comparables[
 
-            comparables = df_stock[
-                (df_stock["Marca"] == marca_est)
-                &
-                (df_stock["Modelo"] == modelo_est)
-            ]
+            comparables["Versión"]
+            .astype(str)
+            ==
+            str(version_est)
+
+        ]
+
+        if len(comparables_version) >= 3:
+
+            comparables = comparables_version
 
         if len(comparables) > 0:
 
             mercado_prom = pd.to_numeric(
-                comparables["Precio Mercado"],
+                comparables["Precio Venta Real"],
                 errors="coerce"
-            ).mean()
-
-            toma_prom = pd.to_numeric(
-                comparables["Precio toma historico autored"],
-                errors="coerce"
-            ).mean()
+            ).median()
 
             km_prom = pd.to_numeric(
                 comparables["Kilometraje"],
                 errors="coerce"
-            ).mean()
+            ).median()
+
+            año_prom = pd.to_numeric(
+                comparables["Año"],
+                errors="coerce"
+            ).median()
+
+            # Ajustes conservadores
 
             ajuste_km = (
                 km_est - km_prom
-            ) * 15
+            ) * 8
 
             ajuste_año = (
-                año_est - comparables["Año"].mean()
-            ) * 300000
+                año_est - año_prom
+            ) * 200000
 
             mercado_estimado = (
                 mercado_prom
@@ -1252,10 +1259,17 @@ with tab2:
                 + ajuste_año
             )
 
+            # Evitar valores negativos
+
+            mercado_estimado = max(
+                mercado_estimado,
+                1000000
+            )
+
+            # Toma calculada desde mercado
+
             toma_estimada = (
-                toma_prom
-                - ajuste_km
-                + ajuste_año
+                mercado_estimado * 0.88
             )
 
             venta_sugerida = (
