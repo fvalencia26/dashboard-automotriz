@@ -962,6 +962,8 @@ with tab2:
         - stock_preparacion
     )
 
+    st.error("VERSION 16 JUNIO - KPI TALLER")
+
     st.subheader("🚗 Estado del Stock")
 
     col1, col2, col3, col4, col5 = st.columns(5)
