@@ -938,25 +938,20 @@ with tab2:
     )
 
     stock_taller = len(
-    df_stock[
-        df_stock["Estado Dealer"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .isin([
-            "EN TALLER",
-            "EN TALLER EXTERNO",
-            ])
+        df_stock[
+            df_stock["Estado Dealer"]
+            .astype(str)
+            .str.upper()
+            .str.contains("TALLER", na=False)
         ]
     )
 
     stock_preparacion = len(
-    df_stock[
-        df_stock["Estado Dealer"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        == "EN PREPARACION"
+        df_stock[
+            df_stock["Estado Dealer"]
+            .astype(str)
+            .str.upper()
+            .str.contains("PREPAR", na=False)
         ]
     )
 
