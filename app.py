@@ -993,6 +993,37 @@ with tab2:
         f"{stock_otros:,.0f}".replace(",", ".")
     )
 
+        # PRUEBA TEMPORAL
+
+    st.write(
+        "Taller encontrados:",
+        len(
+            df_stock[
+                df_stock["Estado Dealer"]
+                .astype(str)
+                .str.upper()
+                .str.contains("TALLER", na=False)
+            ]
+        )
+    )
+
+    st.write(
+        "Preparación encontrados:",
+        len(
+            df_stock[
+                df_stock["Estado Dealer"]
+                .astype(str)
+                .str.upper()
+                .str.contains("PREPAR", na=False)
+            ]
+        )
+    )
+
+    st.write(
+        df_stock["Estado Dealer"]
+        .value_counts()
+    )
+
     st.subheader("💡 Pricing Automático ( Autos Disponibles )")
 
     col1, col2, col3, col4 = st.columns(4)
