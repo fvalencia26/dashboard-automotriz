@@ -962,7 +962,6 @@ with tab2:
         - stock_preparacion
     )
 
-    st.error("VERSION 16 JUNIO - KPI TALLER")
 
     st.subheader("🚗 Estado del Stock")
 
@@ -991,37 +990,6 @@ with tab2:
     col5.metric(
         "⚪ Otros",
         f"{stock_otros:,.0f}".replace(",", ".")
-    )
-
-        # PRUEBA TEMPORAL
-
-    st.write(
-        "Taller encontrados:",
-        len(
-            df_stock[
-                df_stock["Estado Dealer"]
-                .astype(str)
-                .str.upper()
-                .str.contains("TALLER", na=False)
-            ]
-        )
-    )
-
-    st.write(
-        "Preparación encontrados:",
-        len(
-            df_stock[
-                df_stock["Estado Dealer"]
-                .astype(str)
-                .str.upper()
-                .str.contains("PREPAR", na=False)
-            ]
-        )
-    )
-
-    st.write(
-        df_stock["Estado Dealer"]
-        .value_counts()
     )
 
     st.subheader("💡 Pricing Automático ( Autos Disponibles )")
