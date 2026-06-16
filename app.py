@@ -923,20 +923,40 @@ with tab2:
     stock_total = len(df_stock)
 
     stock_disponible = len(
-        df_stock[
-            df_stock["Estado Dealer"]
-            .astype(str)
-            .str.upper()
-            .str.contains("DISPONIBLE", na=False)
+    df_stock[
+        df_stock["Estado Dealer"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .isin([
+            "DISPONIBLE",
+            "DEVOLUCION NUEVOS DISPONIBLE",
+            "CON PRENDA",
+            "DEMO/INTERNO"
+            ])
         ]
     )
 
     stock_taller = len(
-        df_stock[
-            df_stock["Estado Dealer"]
-            .astype(str)
-            .str.upper()
-            .str.contains("TALLER", na=False)
+    df_stock[
+        df_stock["Estado Dealer"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .isin([
+            "EN TALLER",
+            "EN TALLER EXTERNO",
+            ])
+        ]
+    )
+
+    stock_preparacion = len(
+    df_stock[
+        df_stock["Estado Dealer"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        == "EN PREPARACION"
         ]
     )
 
@@ -944,11 +964,12 @@ with tab2:
         stock_total
         - stock_disponible
         - stock_taller
+        - stock_preparacion
     )
 
     st.subheader("🚗 Estado del Stock")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     col1.metric(
         "🚗 Total",
@@ -966,6 +987,11 @@ with tab2:
     )
 
     col4.metric(
+    "🔵 En Preparación",
+    f"{stock_preparacion:,.0f}".replace(",", ".")
+    )
+
+    col5.metric(
         "⚪ Otros",
         f"{stock_otros:,.0f}".replace(",", ".")
     )
