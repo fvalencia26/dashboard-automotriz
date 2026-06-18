@@ -173,6 +173,11 @@ def cargar_datos():
         "historico tasaciones.xlsx",
         sheet_name="BBDD"
     )
+        
+        df_rotacion = pd.read_excel(
+        "rotación 2026.xlsm",
+        sheet_name="Rotación"
+    )
 
         return (
         df_ventas,
@@ -180,10 +185,11 @@ def cargar_datos():
         df_tasaciones,
         df_peritajes,
         df_tomas,
-        df_historico
+        df_historico,
+        df_rotacion
     )
 
-df_ventas, df_stock, df_tasaciones, df_peritajes, df_tomas, df_historico = cargar_datos()
+df_ventas, df_stock, df_tasaciones, df_peritajes, df_tomas, df_historico, df_rotacion = cargar_datos()
 
 # =========================================================
 # LIMPIAR COLUMNAS
@@ -913,33 +919,26 @@ with tab2:
     # KPIs STOCK
     # ==========================================
 
-    stock_total = len(df_stock)
-    
-
-    # ==========================================
-# KPIs STOCK
-# ==========================================
-
-    stock_total = len(df_stock)
+    stock_total = len(df_rotacion)
 
     stock_disponible = len(
-    df_stock[
-        df_stock["Estado Dealer"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .isin([
-            "DISPONIBLE",
-            "DEVOLUCION NUEVOS DISPONIBLE",
-            "CON PRENDA",
-            "DEMO/INTERNO"
+        df_rotacion[
+            df_rotacion["Estado Dealer"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .isin([
+                "DISPONIBLE",
+                "DEVOLUCION NUEVOS DISPONIBLE",
+                "CON PRENDA",
+                "DEMO/INTERNO"
             ])
         ]
     )
 
     stock_taller = len(
-        df_stock[
-            df_stock["Estado Dealer"]
+        df_rotacion[
+            df_rotacion["Estado Dealer"]
             .astype(str)
             .str.upper()
             .str.contains("TALLER", na=False)
@@ -947,8 +946,8 @@ with tab2:
     )
 
     stock_preparacion = len(
-        df_stock[
-            df_stock["Estado Dealer"]
+        df_rotacion[
+            df_rotacion["Estado Dealer"]
             .astype(str)
             .str.upper()
             .str.contains("PREPAR", na=False)
@@ -961,7 +960,6 @@ with tab2:
         - stock_taller
         - stock_preparacion
     )
-
 
     st.subheader("🚗 Estado del Stock")
 
@@ -990,6 +988,140 @@ with tab2:
     col5.metric(
         "⚪ Otros",
         f"{stock_otros:,.0f}".replace(",", ".")
+    )
+
+    opcion_stock = st.radio(
+        "Ver detalle de stock",
+        [
+            "Total",
+            "Disponible",
+            "En Taller",
+            "En Preparación",
+            "Otros"
+        ],
+        horizontal=True
+    )
+
+    if opcion_stock == "Total":
+
+        df_detalle = df_rotacion.copy()
+
+    elif opcion_stock == "Disponible":
+
+        df_detalle = df_rotacion[
+        df_rotacion["Estado Dealer"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .isin([
+            "DISPONIBLE",
+            "DEVOLUCION NUEVOS DISPONIBLE",
+            "CON PRENDA",
+            "DEMO/INTERNO"
+        ])
+    ]
+
+    elif opcion_stock == "En Taller":
+
+        df_detalle = df_rotacion[
+        df_rotacion["Estado Dealer"]
+        .astype(str)
+        .str.upper()
+        .str.contains("TALLER", na=False)
+    ]
+
+    elif opcion_stock == "En Preparación":
+
+        df_detalle = df_rotacion[
+        df_rotacion["Estado Dealer"]
+        .astype(str)
+        .str.upper()
+        .str.contains("PREPAR", na=False)
+    ]
+
+    else:
+
+        df_detalle = df_rotacion[
+        ~df_rotacion["Estado Dealer"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .isin([
+            "DISPONIBLE",
+            "DEVOLUCION NUEVOS DISPONIBLE",
+            "CON PRENDA",
+            "DEMO/INTERNO",
+            "EN TALLER",
+            "EN TALLER EXTERNO",
+            "EN PREPARACION"
+        ])
+    ]
+            # ==========================================
+    # PRECIO SUGERIDO SEGÚN DÍAS STOCK
+    # ==========================================
+
+    for col in [
+        "0 - 15 DÍAS",
+        "15 - 30 DÍAS",
+        "30 - 60 DÍAS",
+        "60 + DÍAS"
+    ]:
+        df_detalle[col] = pd.to_numeric(
+            df_detalle[col],
+            errors="coerce"
+        )
+
+    def obtener_precio_sugerido(row):
+
+        dias = pd.to_numeric(
+            row["Días Stock"],
+            errors="coerce"
+        )
+
+        if pd.isna(dias):
+            return None
+
+        if dias <= 15:
+            return row["0 - 15 DÍAS"]
+
+        elif dias <= 30:
+            return row["15 - 30 DÍAS"]
+
+        elif dias <= 60:
+            return row["30 - 60 DÍAS"]
+
+        else:
+            return row["60 + DÍAS"]
+
+
+    df_detalle["Precio Sugerido"] = (
+        df_detalle.apply(
+            obtener_precio_sugerido,
+            axis=1
+        )
+    )
+
+    # ==========================================
+    # TABLA FINAL
+    # ==========================================
+
+    st.dataframe(
+        df_detalle[
+            [
+                "Placa Patente",
+                "Marca",
+                "Versión",
+                "Año",
+                "Kilometraje",
+                "Días Stock",
+                "Precio Toma",
+                "PM",
+                "Precio Lista",
+                "Precio Sugerido"
+            ]
+        ],
+        use_container_width=True,
+        hide_index=True
     )
 
     st.subheader("💡 Pricing Automático ( Autos Disponibles )")
