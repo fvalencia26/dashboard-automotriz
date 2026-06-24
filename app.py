@@ -3,15 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-df = pd.read_excel("Ventas.xlsx")
 
-df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"])
-
-df["Año"] = df["Fecha Venta"].dt.year
-
-df["Mes"] = df["Fecha Venta"].dt.month
-
-df["Periodo"] = df["Fecha Venta"].dt.strftime("%Y-%m")
 
 # =========================================================
 # CONFIGURACION PAGINA
@@ -192,6 +184,19 @@ def cargar_datos():
 df_ventas, df_stock, df_tasaciones, df_peritajes, df_tomas, df_historico, df_rotacion = cargar_datos()
 
 # =========================================================
+# FECHAS VENTAS
+# =========================================================
+
+df_ventas["Fecha Venta"] = pd.to_datetime(
+    df_ventas["Fecha Venta"],
+    errors="coerce"
+)
+
+df_ventas["Año"] = df_ventas["Fecha Venta"].dt.year
+df_ventas["Mes"] = df_ventas["Fecha Venta"].dt.month
+df_ventas["Periodo"] = df_ventas["Fecha Venta"].dt.strftime("%Y-%m")
+
+# =========================================================
 # LIMPIAR COLUMNAS
 # =========================================================
 
@@ -239,7 +244,11 @@ font-weight:800;
 
 st.sidebar.header("Filtros")
 
-años = sorted(df["Año"].unique())
+años = sorted(
+    df_ventas["Año"]
+    .dropna()
+    .unique()
+)
 
 años_sel = st.sidebar.multiselect(
     "Año",
@@ -255,10 +264,10 @@ meses_sel = st.sidebar.multiselect(
     default=meses
 )
 
-df = df[
-    (df["Año"].isin(años_sel)) &
-    (df["Mes"].isin(meses_sel))
-]
+df_filtros = df_ventas[
+    (df_ventas["Año"].isin(años_sel)) &
+    (df_ventas["Mes"].isin(meses_sel))
+].copy()
 
 marca = st.sidebar.multiselect(
     "Marca",
@@ -268,9 +277,9 @@ marca = st.sidebar.multiselect(
 if marca:
 
     modelos_disponibles = sorted(
-        df[
-            df["Marca"].isin(marca)
-        ]["Modelo"]
+        df_filtros[
+    df_filtros["Marca"].isin(marca)
+    ]["Modelo"]
         .dropna()
         .astype(str)
         .unique()
@@ -279,10 +288,10 @@ if marca:
 else:
 
     modelos_disponibles = sorted(
-        df["Modelo"]
-        .dropna()
-        .astype(str)
-        .unique()
+    df_filtros["Modelo"]
+    .dropna()
+    .astype(str)
+    .unique()
     )
 
 modelo = st.sidebar.multiselect(
@@ -290,7 +299,7 @@ modelo = st.sidebar.multiselect(
     modelos_disponibles
 )
 
-df_version = df.copy()
+df_version = df_filtros.copy()
 
 if marca:
 
@@ -326,52 +335,48 @@ sucursal = st.sidebar.multiselect(
     sorted(df_ventas["Sucursal"].dropna().unique())
 )
 
-# =========================================================
-# FILTROS
-# =========================================================
+    # =========================================================
+    # FILTROS VENTAS
+    # =========================================================
 
 df_filtrado = df_ventas.copy()
 
-df_filtrado = df[
-    (df["Año"].isin(años_sel)) &
-    (df["Mes"].isin(meses_sel))
-]
+df_filtrado = df_filtrado[
+        (df_filtrado["Año"].isin(años_sel))
+        &
+        (df_filtrado["Mes"].isin(meses_sel))
+    ]
 
 if marca:
-
-    df_filtrado = df_filtrado[
-        df_filtrado["Marca"].isin(marca)
-    ]
+        df_filtrado = df_filtrado[
+            df_filtrado["Marca"].isin(marca)
+        ]
 
 if modelo:
-
-    df_filtrado = df_filtrado[
-        df_filtrado["Modelo"]
-        .astype(str)
-        .str.strip()
-        .isin([m.strip() for m in modelo])
-    ]
+        df_filtrado = df_filtrado[
+            df_filtrado["Modelo"]
+            .astype(str)
+            .str.strip()
+            .isin([m.strip() for m in modelo])
+        ]
 
 if version:
-
-    df_filtrado = df_filtrado[
-        df_filtrado["Versión"]
-        .astype(str)
-        .str.strip()
-        .isin([v.strip() for v in version])
-    ]
+        df_filtrado = df_filtrado[
+            df_filtrado["Versión"]
+            .astype(str)
+            .str.strip()
+            .isin([v.strip() for v in version])
+        ]
 
 if vendedor:
-
-    df_filtrado = df_filtrado[
-        df_filtrado["Vendedor"].isin(vendedor)
-    ]
+        df_filtrado = df_filtrado[
+            df_filtrado["Vendedor"].isin(vendedor)
+        ]
 
 if sucursal:
-
-    df_filtrado = df_filtrado[
-        df_filtrado["Sucursal"].isin(sucursal)
-    ]
+        df_filtrado = df_filtrado[
+            df_filtrado["Sucursal"].isin(sucursal)
+        ]
 
 # =========================================================
 # FILTROS TOMAS
@@ -440,14 +445,9 @@ tab1, tab2, tab3 = st.tabs([
 
 with tab1:
 
+ # =====================================================
+    # HEADER
     # =====================================================
-    # KPIS
-    # =====================================================
-
-    ventas_totales = df_filtrado["Total Venta"].sum()
-    margen_total = df_filtrado["Margen de Venta"].sum()
-    cantidad_ventas = len(df_filtrado)
-    ticket_promedio = ventas_totales / cantidad_ventas if cantidad_ventas > 0 else 0
 
     st.markdown("""
     <div style="
@@ -471,8 +471,49 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
 
+    # =====================================================
+    # FILTRO
+    # =====================================================
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        tipo_sel = st.selectbox(
+            "Tipo de vehículo",
+            ["Todos", "Nuevo", "Usado"]
+        )
+
+    # =====================================================
+    # DATA FILTRADA
+    # =====================================================
+
+    df_kpi = df_filtrado.copy()
+
+    # limpieza (recomendado)
+    df_kpi["Tipo de vehiculo"] = df_kpi["Tipo de vehiculo"].str.strip().str.title()
+
+    if tipo_sel == "Nuevo":
+        df_kpi = df_kpi[df_kpi["Tipo de vehiculo"] == "Nuevo"]
+
+    elif tipo_sel == "Usado":
+        df_kpi = df_kpi[df_kpi["Tipo de vehiculo"] == "Usado"]
+
+    # =====================================================
+    # KPIS
+    # =====================================================
+
+    ventas_totales = df_kpi["Total Venta"].sum()
+    margen_total = df_kpi["Margen de Venta"].sum()
+    cantidad_ventas = len(df_kpi)
+    ticket_promedio = ventas_totales / cantidad_ventas if cantidad_ventas > 0 else 0
+
+   
+    # =====================================================
+    # METRICAS
+    # =====================================================
+
     col1, col2, col3, col4 = st.columns(4)
-    
+
     col1.metric(
         "💰 Ventas Totales",
         f"${ventas_totales:,.0f}".replace(",", ".")
@@ -530,7 +571,7 @@ with tab1:
     if tipo_grafico == "Total Venta":
 
         evolucion = (
-        df_filtrado.groupby(["Mes", "Año"])["Total Venta"]
+        df_kpi.groupby(["Mes", "Año"])["Total Venta"]
         .sum()
         .reset_index()
     )
@@ -550,7 +591,7 @@ with tab1:
     elif tipo_grafico == "N° Vehículos":
 
         vehiculos = (
-            df_filtrado.groupby(["Mes", "Año"])["Placa Patente"]
+            df_kpi.groupby(["Mes", "Año"])["Placa Patente"]
             .nunique()
             .reset_index(name="Cantidad")
         )
@@ -570,7 +611,7 @@ with tab1:
     else:
 
         margen = (
-            df_filtrado.groupby(["Mes", "Año"])["Margen de Venta"]
+            df_kpi.groupby(["Mes", "Año"])["Margen de Venta"]
             .mean()
             .reset_index()
         )
@@ -630,7 +671,7 @@ with tab1:
     st.subheader("🧑 Rendimiento por Vendedor")
 
     lista_vendedores = sorted(
-        df_filtrado["Vendedor"]
+        df_kpi["Vendedor"]
         .dropna()
         .unique()
     )
@@ -644,12 +685,12 @@ with tab1:
 
     if vendedor_select == "TODOS":
 
-        df_vendedor = df_filtrado.copy()
+        df_vendedor = df_kpi.copy()
 
     else:
 
-        df_vendedor = df_filtrado[
-            df_filtrado["Vendedor"]
+        df_vendedor = df_kpi[
+            df_kpi["Vendedor"]
             == vendedor_select
         ]
 
@@ -772,7 +813,8 @@ with tab1:
     # =====================================================
 
     top_vendedores = (
-        df_filtrado.groupby("Vendedor")["Total Venta"]
+        df_kpi[df_kpi["Vendedor"] != "VENTAS OFICINA ."]
+        .groupby("Vendedor")["Total Venta"]
         .sum()
         .reset_index()
         .sort_values(by="Total Venta", ascending=False)
@@ -821,15 +863,18 @@ with tab1:
     )
 
     ventas_sucursal = (
-        df_filtrado.groupby("Sucursal")
+        df_kpi.groupby("Sucursal")
         .size()
         .reset_index(name="Cantidad Ventas")
+        .sort_values("Cantidad Ventas", ascending=False)
+        .head(10)
     )
 
     fig_sucursal = px.bar(
         ventas_sucursal,
-        x="Sucursal",
-        y="Cantidad Ventas",
+        x="Cantidad Ventas",
+        y="Sucursal",
+        orientation="h",
         color="Cantidad Ventas",
         text_auto=True,
         template="plotly_dark"
