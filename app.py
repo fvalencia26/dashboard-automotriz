@@ -576,6 +576,10 @@ with tab1:
         .reset_index()
     )
 
+        evolucion = evolucion[
+            evolucion["Total Venta"] > 0
+        ]
+
         fig = px.line(
         evolucion,
         x="Mes",
