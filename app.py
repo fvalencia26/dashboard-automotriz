@@ -377,6 +377,15 @@ if sucursal:
         df_filtrado = df_filtrado[
             df_filtrado["Sucursal"].isin(sucursal)
         ]
+    # =========================================================
+    # FILTRO VENTAS
+    # =========================================================
+
+df_ventas_filtrado = df_ventas[
+        (df_ventas["Año"].isin(años_sel))
+        &
+        (df_ventas["Mes"].isin(meses_sel))
+    ]
 
 # =========================================================
 # FILTROS TOMAS
@@ -1672,9 +1681,29 @@ with tab3:
         f"${valor_tomas:,.0f}".replace(",", ".")
     )
 
-# =====================================================
-# FUNNEL
-# =====================================================
+
+
+    # =====================================================
+    # VENTAS NUEVOS / USADOS
+    # =====================================================
+
+    total_nuevos = (
+        df_ventas_filtrado["Tipo de vehiculo"]
+        .str.upper()
+        .eq("NUEVO")
+        .sum()
+    )
+
+    total_usados = (
+        df_ventas_filtrado["Tipo de vehiculo"]
+        .str.upper()
+        .eq("USADO")
+        .sum()
+    )
+
+    # =====================================================
+    # FUNNEL
+    # =====================================================
 
     st.markdown("---")
     st.subheader("🔄 Funnel Comercial")
@@ -1683,19 +1712,24 @@ with tab3:
 
     funnel = go.Figure(go.Funnel(
         y=[
+            "Nuevos",
             "Tasaciones",
             "Peritajes",
-            "Tomas"
+            "Tomas",
+            "Usados"
         ],
         x=[
+            total_nuevos,
             total_tasaciones,
             total_peritajes,
-            total_tomas
-        ]
+            total_tomas,
+            total_usados
+        ],
+        textinfo="value+percent initial"
     ))
 
     funnel.update_layout(
-        height=500,
+        height=550,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="white")
@@ -1705,7 +1739,6 @@ with tab3:
         funnel,
         use_container_width=True
     )
-
 # =====================================================
 # CONVERSIONES
 # =====================================================
