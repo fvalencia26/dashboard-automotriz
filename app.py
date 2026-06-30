@@ -604,10 +604,10 @@ with tab1:
     elif tipo_grafico == "N° Vehículos":
 
         vehiculos = (
-            df_kpi.groupby(["Mes", "Año"])["Placa Patente"]
-            .nunique()
-            .reset_index(name="Cantidad")
-        )
+        df_kpi.groupby(["Mes", "Año"])["Folio Venta"]
+        .count()
+        .reset_index(name="Cantidad")
+    )
 
         fig = px.line(
             vehiculos,
