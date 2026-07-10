@@ -1691,36 +1691,11 @@ with tab3:
 
     st.markdown("---")
 
-    vendedor_funnel = st.multiselect(
-        "👨‍💼 Filtrar Funnel por vendedor",
-        sorted(df_ventas["Vendedor"].dropna().unique()),
-        key="filtro_funnel"
-    )
-
     ventas_funnel = df_ventas_filtrado.copy()
     tas_funnel = df_tas_filtrado.copy()
     per_funnel = df_per_filtrado.copy()
     toma_funnel = df_toma_filtrado.copy()
 
-    if vendedor_funnel:
-
-        ventas_funnel = ventas_funnel[
-            ventas_funnel["Vendedor"].isin(vendedor_funnel)
-        ]
-
-        tas_funnel = tas_funnel[
-            tas_funnel["Vendedor"].isin(vendedor_funnel)
-        ]
-
-        per_funnel = per_funnel[
-            per_funnel["Vendedor"].isin(vendedor_funnel)
-        ]
-
-        toma_funnel = toma_funnel[
-            toma_funnel["Vendedor"].isin(vendedor_funnel)
-        ]
-
-    # ← Desde aquí ya NO va dentro del if
 
     total_nuevos_funnel = (
         ventas_funnel["Tipo de vehiculo"]
