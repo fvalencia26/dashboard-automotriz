@@ -382,10 +382,10 @@ if sucursal:
     # =========================================================
 
 df_ventas_filtrado = df_ventas[
-        (df_ventas["Año"].isin(años_sel))
-        &
-        (df_ventas["Mes"].isin(meses_sel))
-    ]
+    (df_ventas["Año"].isin(años_sel))
+    &
+    (df_ventas["Mes"].isin(meses_sel))
+]
 
 # =========================================================
 # FILTROS TOMAS
@@ -428,16 +428,15 @@ df_peritajes["Mes Filtro"] = df_peritajes["Fecha de firma"].dt.month
 # =========================================================
 
 df_tas_filtrado = df_tasaciones[
-    (df_tasaciones["Año Filtro"].isin(años_sel))
-    &
+    (df_tasaciones["Año Filtro"].isin(años_sel)) &
     (df_tasaciones["Mes Filtro"].isin(meses_sel))
 ]
 
 df_per_filtrado = df_peritajes[
-    (df_peritajes["Año Filtro"].isin(años_sel))
-    &
+    (df_peritajes["Año Filtro"].isin(años_sel)) &
     (df_peritajes["Mes Filtro"].isin(meses_sel))
 ]
+
 # =========================================================
 # TABS
 # =========================================================
@@ -1682,63 +1681,99 @@ with tab3:
     )
 
 
+        # =====================================================
+        # FUNNEL
+        # =====================================================
 
     # =====================================================
-    # VENTAS NUEVOS / USADOS
-    # =====================================================
+# FILTRO FUNNEL
+# =====================================================
 
-    total_nuevos = (
-        df_ventas_filtrado["Tipo de vehiculo"]
+    st.markdown("---")
+
+    vendedor_funnel = st.multiselect(
+        "👨‍💼 Filtrar Funnel por vendedor",
+        sorted(df_ventas["Vendedor"].dropna().unique()),
+        key="filtro_funnel"
+    )
+
+    ventas_funnel = df_ventas_filtrado.copy()
+    tas_funnel = df_tas_filtrado.copy()
+    per_funnel = df_per_filtrado.copy()
+    toma_funnel = df_toma_filtrado.copy()
+
+    if vendedor_funnel:
+
+        ventas_funnel = ventas_funnel[
+            ventas_funnel["Vendedor"].isin(vendedor_funnel)
+        ]
+
+        tas_funnel = tas_funnel[
+            tas_funnel["Vendedor"].isin(vendedor_funnel)
+        ]
+
+        per_funnel = per_funnel[
+            per_funnel["Vendedor"].isin(vendedor_funnel)
+        ]
+
+        toma_funnel = toma_funnel[
+            toma_funnel["Vendedor"].isin(vendedor_funnel)
+        ]
+
+    # ← Desde aquí ya NO va dentro del if
+
+    total_nuevos_funnel = (
+        ventas_funnel["Tipo de vehiculo"]
         .str.upper()
         .eq("NUEVO")
         .sum()
     )
 
-    total_usados = (
-        df_ventas_filtrado["Tipo de vehiculo"]
+    total_usados_funnel = (
+        ventas_funnel["Tipo de vehiculo"]
         .str.upper()
         .eq("USADO")
         .sum()
     )
 
-    # =====================================================
-    # FUNNEL
-    # =====================================================
-
+    total_tasaciones_funnel = len(tas_funnel)
+    total_peritajes_funnel = len(per_funnel)
+    total_tomas_funnel = len(toma_funnel)
+        
     st.markdown("---")
     st.subheader("🔄 Funnel Comercial")
 
     import plotly.graph_objects as go
 
     funnel = go.Figure(go.Funnel(
-        y=[
-            "Nuevos",
-            "Tasaciones",
-            "Peritajes",
-            "Tomas",
-            "Usados"
-        ],
-        x=[
-            total_nuevos,
-            total_tasaciones,
-            total_peritajes,
-            total_tomas,
-            total_usados
-        ],
-        textinfo="value+percent initial"
-    ))
+            y=[
+                "Nuevos",
+                "Tasaciones",
+                "Peritajes",
+                "Tomas",
+                "Usados"
+            ],
+            x=[
+                total_nuevos_funnel,
+                total_tasaciones_funnel,
+                total_peritajes_funnel,
+                total_tomas_funnel,
+                total_usados_funnel
+            ],
+            textinfo="value+percent initial"
+        ))
 
     funnel.update_layout(
-        height=550,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="white")
-    )
+            height=550,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="white")
+        )
 
     st.plotly_chart(
-        funnel,
-        use_container_width=True
-    )
+            funnel,
+            use_container_width=True
+        )
 # =====================================================
 # CONVERSIONES
 # =====================================================
