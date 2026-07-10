@@ -1685,8 +1685,6 @@ with tab3:
         # FUNNEL
         # =====================================================
 
-    st.markdown("---")
-
     ventas_funnel = df_ventas_filtrado.copy()
     tas_funnel = df_tas_filtrado.copy()
     per_funnel = df_per_filtrado.copy()
