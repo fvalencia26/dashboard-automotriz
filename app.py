@@ -1208,6 +1208,22 @@ with tab2:
         hide_index=True
     )
 
+    # ==========================================
+# FILTRO PARA PRICING AUTOMÁTICO
+# ==========================================
+
+    df_pricing = df_stock[
+        ~df_stock["Estado Dealer"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .isin([
+            "USO GERENCIA",
+            "VEHICULO EMPRESA",
+            "VEHICULO USO DE SERVICIO"
+        ])
+    ].copy()
+
     st.subheader("💡 Pricing Automático ( Autos Disponibles )")
 
     col1, col2, col3, col4 = st.columns(4)
@@ -1217,7 +1233,7 @@ with tab2:
         marca_pricing = st.selectbox(
             "Marca",
             sorted(
-                df_stock["Marca"]
+                df_pricing["Marca"]
                 .dropna()
                 .unique()
             )
@@ -1228,8 +1244,8 @@ with tab2:
         modelo_pricing = st.selectbox(
             "Modelo",
             sorted(
-                df_stock[
-                    df_stock["Marca"]
+                df_pricing[
+                    df_pricing["Marca"]
                     == marca_pricing
                 ]["Modelo"]
                 .dropna()
@@ -1243,14 +1259,14 @@ with tab2:
         año_pricing = st.selectbox(
             "Año",
             sorted(
-                df_stock[
+                df_pricing[
                     (
-                        df_stock["Marca"]
+                        df_pricing["Marca"]
                         == marca_pricing
                     )
                     &
                     (
-                        df_stock["Modelo"]
+                        df_pricing["Modelo"]
                         .astype(str)
                         == str(modelo_pricing)
                     )
@@ -1265,20 +1281,20 @@ with tab2:
         version_pricing = st.selectbox(
             "Versión",
             sorted(
-                df_stock[
+                df_pricing[
                     (
-                        df_stock["Marca"]
+                        df_pricing["Marca"]
                         == marca_pricing
                     )
                     &
                     (
-                        df_stock["Modelo"]
+                        df_pricing["Modelo"]
                         .astype(str)
                         == str(modelo_pricing)
                     )
                     &
                     (
-                        df_stock["Año"]
+                        df_pricing["Año"]
                         == año_pricing
                     )
                 ]["Versión"]
@@ -1288,25 +1304,25 @@ with tab2:
             )
         )
 
-    resultado = df_stock[
+    resultado = df_pricing[
         (
-            df_stock["Marca"]
+            df_pricing["Marca"]
             == marca_pricing
         )
         &
         (
-            df_stock["Modelo"]
+            df_pricing["Modelo"]
             .astype(str)
             == str(modelo_pricing)
         )
         &
         (
-            df_stock["Año"]
+            df_pricing["Año"]
             == año_pricing
         )
         &
         (
-            df_stock["Versión"]
+            df_pricing["Versión"]
             .astype(str)
             == str(version_pricing)
         )
@@ -1321,20 +1337,51 @@ with tab2:
         toma = fila["Precio toma historico autored"]
         dias = fila["Días Stock"]
 
-        if dias <= 30:
+        rotacion = str(fila["Tipo rotación"]).strip().upper()
 
-            venta_sugerida = mercado * 1.02
-            toma_sugerida = toma * 1.02
+        if rotacion in ["ROTACION ALTA", "ROTACIÓN ALTA"]:
 
-        elif dias <= 90:
+            if dias <= 15:
+                venta_sugerida = mercado * 1.03
+            elif dias <= 30:
+                venta_sugerida = mercado * 1.00
+            elif dias <= 60:
+                venta_sugerida = mercado * 0.97
+            else:
+                venta_sugerida = mercado * 0.94
 
-            venta_sugerida = mercado * 0.98
-            toma_sugerida = toma * 1.00
+        elif rotacion in ["ROTACION MEDIA", "ROTACIÓN MEDIA"]:
+
+            if dias <= 15:
+                venta_sugerida = mercado * 1.00
+            elif dias <= 30:
+                venta_sugerida = mercado * 0.97
+            elif dias <= 60:
+                venta_sugerida = mercado * 0.94
+            else:
+                venta_sugerida = mercado * 0.90
+
+        elif rotacion in ["ROTACION BAJA", "ROTACIÓN BAJA"]:
+
+            if dias <= 15:
+                venta_sugerida = mercado * 0.92
+            elif dias <= 30:
+                venta_sugerida = mercado * 0.90
+            elif dias <= 60:
+                venta_sugerida = mercado * 0.87
+            else:
+                venta_sugerida = mercado * 0.85
+
+        elif rotacion == "LIQUIDAR":
+
+            venta_sugerida = mercado * 0.80
 
         else:
 
-            venta_sugerida = mercado * 0.95
-            toma_sugerida = toma * 1.05
+            venta_sugerida = mercado
+
+        # Mantener la toma como está
+        toma_sugerida = toma
 
         col1, col2, col3 = st.columns(3)
 
