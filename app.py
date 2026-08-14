@@ -973,14 +973,17 @@ with tab1:
 with tab2:
 
     # ==========================================
-    # FILTRO POR EMPRESA
+    # FILTROS STOCK
+    # EMPRESA → MARCA → VERSIÓN
     # ==========================================
 
-        # ==========================================
-    # FILTRO POR EMPRESA
+    col1, col2, col3 = st.columns(3)
+
+    # ==========================================
+    # EMPRESA
     # ==========================================
 
-    if "Empresa" in df_rotacion.columns:
+    with col1:
 
         empresas_disponibles = sorted(
             df_rotacion["Empresa"]
@@ -990,34 +993,116 @@ with tab2:
             .unique()
         )
 
-        empresas_seleccionadas = st.multiselect(
+        empresa_filtro = st.selectbox(
             "🏢 Empresa",
-            options=empresas_disponibles,
-            default=empresas_disponibles,
+            ["Todas"] + empresas_disponibles,
             key="filtro_empresa_stock"
         )
 
-        df_rotacion = df_rotacion[
+    # ==========================================
+    # FILTRAR POR EMPRESA
+    # ==========================================
+
+    if empresa_filtro != "Todas":
+
+        df_filtro_empresa = df_rotacion[
             df_rotacion["Empresa"]
             .astype(str)
             .str.strip()
-            .isin(empresas_seleccionadas)
+            .eq(empresa_filtro)
         ].copy()
 
     else:
 
-        st.warning(
-            "⚠️ La columna 'Empresa' no está disponible en df_rotacion."
+        df_filtro_empresa = df_rotacion.copy()
+
+    # ==========================================
+    # MARCA
+    # ==========================================
+
+    with col2:
+
+        marcas_disponibles = sorted(
+            df_filtro_empresa["Marca"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .unique()
         )
+
+        marca_filtro = st.selectbox(
+            "🏷️ Marca",
+            ["Todas"] + marcas_disponibles,
+            key="filtro_marca_stock"
+        )
+
+    # ==========================================
+    # FILTRAR POR MARCA
+    # ==========================================
+
+    if marca_filtro != "Todas":
+
+        df_filtro_marca = df_filtro_empresa[
+            df_filtro_empresa["Marca"]
+            .astype(str)
+            .str.strip()
+            .eq(marca_filtro)
+        ].copy()
+
+    else:
+
+        df_filtro_marca = df_filtro_empresa.copy()
+
+    # ==========================================
+    # VERSIÓN
+    # ==========================================
+
+    with col3:
+
+        versiones_disponibles = sorted(
+            df_filtro_marca["Versión"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .unique()
+        )
+
+        version_filtro = st.selectbox(
+            "⚙️ Versión",
+            ["Todas"] + versiones_disponibles,
+            key="filtro_version_stock"
+        )
+
+    # ==========================================
+    # DATAFRAME FINAL FILTRADO
+    # ==========================================
+
+    df_rotacion_filtrado = df_filtro_marca.copy()
+
+    if version_filtro != "Todas":
+
+        df_rotacion_filtrado = df_rotacion_filtrado[
+            df_rotacion_filtrado["Versión"]
+            .astype(str)
+            .str.strip()
+            .eq(version_filtro)
+        ].copy()
+
+    st.markdown("---")
+
     # ==========================================
     # KPIs STOCK
     # ==========================================
 
-    stock_total = len(df_rotacion)
+        # ==========================================
+    # KPIs STOCK
+    # ==========================================
+
+    stock_total = len(df_rotacion_filtrado)
 
     stock_disponible = len(
-        df_rotacion[
-            df_rotacion["Estado Dealer"]
+        df_rotacion_filtrado[
+            df_rotacion_filtrado["Estado Dealer"]
             .astype(str)
             .str.strip()
             .str.upper()
@@ -1031,8 +1116,8 @@ with tab2:
     )
 
     stock_taller = len(
-        df_rotacion[
-            df_rotacion["Estado Dealer"]
+        df_rotacion_filtrado[
+            df_rotacion_filtrado["Estado Dealer"]
             .astype(str)
             .str.upper()
             .str.contains("TALLER", na=False)
@@ -1040,8 +1125,8 @@ with tab2:
     )
 
     stock_preparacion = len(
-        df_rotacion[
-            df_rotacion["Estado Dealer"]
+        df_rotacion_filtrado[
+            df_rotacion_filtrado["Estado Dealer"]
             .astype(str)
             .str.upper()
             .str.contains("PREPAR", na=False)
@@ -1049,8 +1134,8 @@ with tab2:
     )
 
     stock_km0 = len(
-        df_rotacion[
-            df_rotacion["Estado Dealer"]
+        df_rotacion_filtrado[
+            df_rotacion_filtrado["Estado Dealer"]
             .astype(str)
             .str.strip()
             .str.upper()
@@ -1100,6 +1185,11 @@ with tab2:
         f"{stock_otros:,.0f}".replace(",", ".")
     )
 
+
+    # ==========================================
+    # DETALLE DEL STOCK
+    # ==========================================
+
     opcion_stock = st.radio(
         "Ver detalle de stock",
         [
@@ -1113,70 +1203,76 @@ with tab2:
         horizontal=True
     )
 
+
     if opcion_stock == "Total":
 
-        df_detalle = df_rotacion.copy()
+        df_detalle = df_rotacion_filtrado.copy()
+
 
     elif opcion_stock == "Disponible":
 
-        df_detalle = df_rotacion[
-        df_rotacion["Estado Dealer"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .isin([
-            "DISPONIBLE",
-            "DEVOLUCION NUEVOS DISPONIBLE",
-            "CON PRENDA",
-            "DEMO/INTERNO"
-        ])
-    ]
+        df_detalle = df_rotacion_filtrado[
+            df_rotacion_filtrado["Estado Dealer"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .isin([
+                "DISPONIBLE",
+                "DEVOLUCION NUEVOS DISPONIBLE",
+                "CON PRENDA",
+                "DEMO/INTERNO"
+            ])
+        ].copy()
+
 
     elif opcion_stock == "En Taller":
 
-        df_detalle = df_rotacion[
-        df_rotacion["Estado Dealer"]
-        .astype(str)
-        .str.upper()
-        .str.contains("TALLER", na=False)
-    ]
+        df_detalle = df_rotacion_filtrado[
+            df_rotacion_filtrado["Estado Dealer"]
+            .astype(str)
+            .str.upper()
+            .str.contains("TALLER", na=False)
+        ].copy()
+
 
     elif opcion_stock == "En Preparación":
 
-        df_detalle = df_rotacion[
-        df_rotacion["Estado Dealer"]
-        .astype(str)
-        .str.upper()
-        .str.contains("PREPAR", na=False)
-    ]
-        
+        df_detalle = df_rotacion_filtrado[
+            df_rotacion_filtrado["Estado Dealer"]
+            .astype(str)
+            .str.upper()
+            .str.contains("PREPAR", na=False)
+        ].copy()
+
+
     elif opcion_stock == "KM 0":
 
-        df_detalle = df_rotacion[
-        df_rotacion["Estado Dealer"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .eq("KM 0")
-    ]
+        df_detalle = df_rotacion_filtrado[
+            df_rotacion_filtrado["Estado Dealer"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .eq("KM 0")
+        ].copy()
+
 
     else:
 
-        df_detalle = df_rotacion[
-        ~df_rotacion["Estado Dealer"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .isin([
-            "DISPONIBLE",
-            "DEVOLUCION NUEVOS DISPONIBLE",
-            "CON PRENDA",
-            "DEMO/INTERNO",
-            "EN TALLER",
-            "EN TALLER EXTERNO",
-            "EN PREPARACION"
-        ])
-    ]
+        df_detalle = df_rotacion_filtrado[
+            ~df_rotacion_filtrado["Estado Dealer"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .isin([
+                "DISPONIBLE",
+                "DEVOLUCION NUEVOS DISPONIBLE",
+                "CON PRENDA",
+                "DEMO/INTERNO",
+                "EN TALLER",
+                "EN TALLER EXTERNO",
+                "EN PREPARACION"
+            ])
+        ].copy()
                     # ==========================================
     # PRECIO SUGERIDO SEGÚN DÍAS STOCK
     # ==========================================
