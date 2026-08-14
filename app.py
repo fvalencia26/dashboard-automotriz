@@ -973,6 +973,43 @@ with tab1:
 with tab2:
 
     # ==========================================
+    # FILTRO POR EMPRESA
+    # ==========================================
+
+        # ==========================================
+    # FILTRO POR EMPRESA
+    # ==========================================
+
+    if "Empresa" in df_rotacion.columns:
+
+        empresas_disponibles = sorted(
+            df_rotacion["Empresa"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .unique()
+        )
+
+        empresas_seleccionadas = st.multiselect(
+            "🏢 Empresa",
+            options=empresas_disponibles,
+            default=empresas_disponibles,
+            key="filtro_empresa_stock"
+        )
+
+        df_rotacion = df_rotacion[
+            df_rotacion["Empresa"]
+            .astype(str)
+            .str.strip()
+            .isin(empresas_seleccionadas)
+        ].copy()
+
+    else:
+
+        st.warning(
+            "⚠️ La columna 'Empresa' no está disponible en df_rotacion."
+        )
+    # ==========================================
     # KPIs STOCK
     # ==========================================
 
