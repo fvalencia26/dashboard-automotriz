@@ -1177,7 +1177,7 @@ with tab2:
             "EN PREPARACION"
         ])
     ]
-            # ==========================================
+                    # ==========================================
     # PRECIO SUGERIDO SEGÚN DÍAS STOCK
     # ==========================================
 
@@ -1191,6 +1191,7 @@ with tab2:
             df_detalle[col],
             errors="coerce"
         )
+
 
     def obtener_precio_sugerido(row):
 
@@ -1222,8 +1223,34 @@ with tab2:
         )
     )
 
+
     # ==========================================
-    # TABLA FINAL
+    # ALERTA SEGÚN DÍAS DE STOCK
+    # ==========================================
+
+    def alerta_stock(dias):
+
+        if pd.isna(dias):
+            return "⚪ Sin Datos"
+
+        elif dias >= 120:
+            return "🔴 Crítico"
+
+        elif dias >= 60:
+            return "🟠 Riesgo"
+
+        else:
+            return "🟢 Saludable"
+
+
+    df_detalle["Alerta"] = (
+        df_detalle["Días Stock"]
+        .apply(alerta_stock)
+    )
+
+
+    # ==========================================
+    # TABLA FINAL DE STOCK
     # ==========================================
 
     st.dataframe(
@@ -1238,7 +1265,8 @@ with tab2:
                 "Precio Toma",
                 "PM",
                 "Precio Lista",
-                "Precio Sugerido"
+                "Precio Sugerido",
+                "Alerta"
             ]
         ],
         use_container_width=True,
@@ -1624,85 +1652,6 @@ with tab2:
             st.warning(
                 "No existen comparables suficientes."
             )
-
-    # =====================================================
-    # ALERTAS STOCK
-    # =====================================================
-
-    st.subheader("🚨 Riesgo y Obsolescencia")
-
-    def alerta_stock(dias):
-
-        if pd.isna(dias):
-            return "⚪ Sin Datos"
-
-        elif dias >= 120:
-            return "🔴 Crítico"
-
-        elif dias >= 60:
-            return "🟠 Riesgo"
-
-        else:
-            return "🟢 Saludable"
-
-    df_stock["Alerta"] = (
-        df_stock["Días Stock"]
-        .apply(alerta_stock)
-    )
-
-    riesgo_stock = df_stock[
-        df_stock["Días Stock"].notna()
-    ]
-
-    buscar_patente = st.text_input(
-        "🔎 Buscar Patente"
-    )
-
-    if buscar_patente:
-
-        riesgo_stock = riesgo_stock[
-            riesgo_stock["Placa Patente"]
-            .astype(str)
-            .str.contains(
-                buscar_patente,
-                case=False,
-                na=False
-            )
-        ]
-
-    riesgo_stock["Días Stock"] = (
-        riesgo_stock["Días Stock"]
-        .fillna(0)
-        .astype(int)
-    )
-
-    riesgo_stock = riesgo_stock[
-        riesgo_stock["Precio toma historico autored"]
-        .fillna(0)
-        .gt(0)
-]
-
-    tabla_final = riesgo_stock[
-        [
-            "Marca",
-            "Modelo",
-            "Versión",
-            "Placa Patente",
-            "Días Stock",
-            "Precio Lista informe stock",
-            "Precio Mercado",
-            "Precio toma historico autored",
-            "Alerta"
-        ]
-    ].sort_values(
-        by="Días Stock",
-        ascending=False
-    )
-
-    st.dataframe(
-        tabla_final,
-        use_container_width=True
-    )
 
 # =========================================================
 # TAB 3 - TOMAS Y RETOMAS
