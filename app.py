@@ -1090,6 +1090,28 @@ with tab2:
     st.markdown("---")
 
     # ==========================================
+# EXCLUIR VEHÍCULOS QUE NO DEBEN CONTABILIZAR
+# ==========================================
+
+    estados_excluir_stock = [
+        "USO GERENCIA",
+        "TEST CAR",
+        "NO DISPONIBLE",
+        "VEHICULO USO DE SERVICIO",
+        "SINIESTRADO",
+        "DEVOLUCION NUEVOS NO DISPONIBLE",
+        "EN RESCILIACION"
+    ]
+
+    df_rotacion_filtrado = df_rotacion_filtrado[
+        ~df_rotacion_filtrado["Estado Dealer"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .isin(estados_excluir_stock)
+    ].copy()
+
+    # ==========================================
     # KPIs STOCK
     # ==========================================
 
