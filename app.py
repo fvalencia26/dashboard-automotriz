@@ -1154,27 +1154,16 @@ with tab2:
         ]
     )
 
-    stock_km0 = len(
-        df_rotacion_filtrado[
-            df_rotacion_filtrado["Estado Dealer"]
-            .astype(str)
-            .str.strip()
-            .str.upper()
-            .eq("KM 0")
-        ]
-    )
-
     stock_otros = (
         stock_total
         - stock_disponible
         - stock_taller
         - stock_preparacion
-        - stock_km0
     )
 
     st.subheader("🚗 Estado del Stock")
 
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2, col3, col4, col5 = st.columns(6)
 
     col1.metric(
         "🚗 Total",
@@ -1197,11 +1186,6 @@ with tab2:
     )
 
     col5.metric(
-        "🚘 KM 0",
-        f"{stock_km0:,.0f}".replace(",", ".")
-    )
-
-    col6.metric(
         "⚪ Otros",
         f"{stock_otros:,.0f}".replace(",", ".")
     )
@@ -1218,7 +1202,6 @@ with tab2:
             "Disponible",
             "En Taller",
             "En Preparación",
-            "KM 0",
             "Otros"
         ],
         horizontal=True
@@ -1264,18 +1247,6 @@ with tab2:
             .str.upper()
             .str.contains("PREPAR", na=False)
         ].copy()
-
-
-    elif opcion_stock == "KM 0":
-
-        df_detalle = df_rotacion_filtrado[
-            df_rotacion_filtrado["Estado Dealer"]
-            .astype(str)
-            .str.strip()
-            .str.upper()
-            .eq("KM 0")
-        ].copy()
-
 
     else:
 
