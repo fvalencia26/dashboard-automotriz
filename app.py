@@ -1100,7 +1100,8 @@ with tab2:
         "VEHICULO USO DE SERVICIO",
         "SINIESTRADO",
         "DEVOLUCION NUEVOS NO DISPONIBLE",
-        "EN RESCILIACION"
+        "EN RESCILIACION",
+        "USO SERVICIO/GERENCIA"
     ]
 
     df_rotacion_filtrado = df_rotacion_filtrado[
