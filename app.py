@@ -441,10 +441,9 @@ df_per_filtrado = df_peritajes[
 # TABS
 # =========================================================
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2 = st.tabs([
     "📈 Ventas",
     "🚗 Stock y Pricing",
-    "🔄 Tomas y Retomas"
 ])
 
 # =========================================================
